@@ -1,0 +1,7 @@
+project_id = "roku-502821"
+region     = "us-west1"
+app_name   = "roku-substack"
+
+# After building the companion API:
+# container_image  = "us-west1-docker.pkg.dev/roku-502821/roku-substack/api:latest"
+# public_base_url  = "https://roku-substack-XXXXX-uw.a.run.app"

@@ -1,0 +1,32 @@
+.DS_Store
+*.log
+.idea/
+.vscode/
+*.code-workspace
+
+# Secrets / local env
+.env
+.env.*
+!.env.example
+**/.env
+!**/.env.example
+
+# Node
+backend/node_modules/
+backend/dist/
+backend/coverage/
+
+# Terraform
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/*.tfstate
+infra/*.tfstate.*
+infra/terraform.tfvars
+infra/*.tfplan
+infra/tfplan
+infra/crash.log
+
+# Roku build artifacts
+channel/roku-substack.zip
+channel/*.pkg
+channel/out/

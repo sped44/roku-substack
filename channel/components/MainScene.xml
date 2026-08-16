@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="MainScene" extends="Scene">
+  <script type="text/brightscript" uri="MainScene.brs" />
+
+  <interface>
+    <field id="apiBaseUrl" type="string" value="https://roku-substack-dliuigqxeq-uw.a.run.app" />
+  </interface>
+
+  <children>
+    <Rectangle
+      id="bg"
+      width="1920"
+      height="1080"
+      color="0x141820FF"
+    />
+
+    <LayoutGroup
+      id="chrome"
+      translation="[80, 60]"
+      itemSpacings="[24]"
+      visible="true"
+    >
+      <Label
+        id="titleLabel"
+        text="Roku Substack"
+        width="1760"
+        font="font:LargeBoldSystemFont"
+        color="0xFFFFFFFF"
+      />
+      <Label
+        id="statusLabel"
+        text="Starting…"
+        width="1760"
+        height="80"
+        wrap="true"
+        font="font:MediumSystemFont"
+        color="0xB0B8C0FF"
+      />
+      <Poster
+        id="qrPoster"
+        width="420"
+        height="420"
+        visible="false"
+        loadDisplayMode="scaleToFit"
+      />
+      <Label
+        id="codeLabel"
+        text=""
+        width="1760"
+        horizAlign="center"
+        font="font:LargeBoldSystemFont"
+        color="0xFFFFFFFF"
+      />
+      <Label
+        id="hintLabel"
+        text=""
+        width="1760"
+        height="200"
+        wrap="true"
+        horizAlign="center"
+        font="font:SmallSystemFont"
+        color="0x8A93A0FF"
+      />
+    </LayoutGroup>
+
+    <RowList
+      id="homeList"
+      translation="[80, 140]"
+      itemComponentName="PosterItem"
+      numRows="3"
+      itemSize="[1760, 280]"
+      rowItemSize="[[320, 220], [320, 220], [320, 220]]"
+      rowItemSpacing="[[24, 0], [24, 0], [24, 0]]"
+      itemSpacing="[0, 36]"
+      showRowLabel="[true, true, true]"
+      rowLabelOffset="[[0, 10], [0, 10], [0, 10]]"
+      rowLabelFont="font:MediumBoldSystemFont"
+      rowLabelColor="0xFFFFFFFF"
+      drawFocusFeedback="false"
+      focusable="true"
+      visible="false"
+    />
+
+    <Label
+      id="toastLabel"
+      translation="[80, 70]"
+      width="1760"
+      text=""
+      font="font:MediumBoldSystemFont"
+      color="0xFF6719FF"
+      visible="false"
+    />
+
+    <MarkupGrid
+      id="authorGrid"
+      translation="[80, 140]"
+      itemComponentName="PosterItem"
+      itemSize="[320, 220]"
+      numColumns="4"
+      numRows="3"
+      itemSpacing="[24, 24]"
+      drawFocusFeedback="false"
+      focusable="true"
+      visible="false"
+    />
+
+    <Video
+      id="videoPlayer"
+      translation="[0, 0]"
+      width="1920"
+      height="1080"
+      visible="false"
+    />
+
+    <LayoutGroup
+      id="audioChrome"
+      translation="[80, 360]"
+      itemSpacings="[16]"
+      visible="false"
+      focusable="true"
+    >
+      <Label
+        id="audioTitle"
+        text=""
+        width="1760"
+        font="font:LargeBoldSystemFont"
+        color="0xFFFFFFFF"
+      />
+      <Label
+        id="audioSubtitle"
+        text=""
+        width="1760"
+        font="font:MediumSystemFont"
+        color="0xB0B8C0FF"
+      />
+      <Label
+        id="audioHint"
+        text="OK pause    Left/Right skip 15s    Fwd/Rev 30s    Back stop"
+        width="1760"
+        font="font:SmallSystemFont"
+        color="0x8A93A0FF"
+      />
+    </LayoutGroup>
+    <Audio id="audioPlayer" />
+
+    <Group id="searchOverlay" visible="false">
+      <Rectangle
+        id="searchDim"
+        width="1920"
+        height="1080"
+        color="0x141820FF"
+      />
+      <Label
+        id="searchTitle"
+        translation="[80, 50]"
+        text="Search"
+        width="1760"
+        font="font:LargeBoldSystemFont"
+        color="0xFFFFFFFF"
+      />
+      <Label
+        id="searchOverlayHint"
+        translation="[80, 110]"
+        text="Type on the keyboard, then press Play to search. Back cancels."
+        width="1760"
+        font="font:MediumSystemFont"
+        color="0xB0B8C0FF"
+      />
+    </Group>
+  </children>
+</component>
