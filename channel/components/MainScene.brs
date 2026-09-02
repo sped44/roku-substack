@@ -22,11 +22,14 @@ sub init()
     m.httpRequestId = 0
     m.phase = "init"
     m.homeData = invalid
+    m.homeFetchedAt = 0
     m.authorPosts = invalid
     m.searchQuery = ""
     m.searchData = invalid
     m.returnPhase = "home"
     m.hidePaid = false
+    m.focusPaidTile = false
+    m.focusRefreshTile = false
     savedHide = m.registry.read("hide_paid")
     if savedHide = "1" then
         m.hidePaid = true
@@ -36,6 +39,7 @@ sub init()
     m.pollTimer.repeat = true
     m.pollTimer.duration = 2
     m.pollTimer.observeField("fire", "onPollTimer")
+    m.top.observeField("wasShown", "onWasShown")
 
     m.homeList.observeField("rowItemSelected", "onHomeItemSelected")
     m.authorGrid.observeField("itemSelected", "onAuthorItemSelected")
@@ -159,14 +163,56 @@ sub onPollTimer()
     runHttp("GET", m.apiBaseUrl + "/api/pair/status?code=" + m.pairCode, [], "", "pair_poll")
 end sub
 
-sub fetchHome()
+sub fetchHome(force = false)
     m.phase = "home_load"
     hidePlayers()
     hideBrowse()
     m.codeLabel.text = ""
     m.hintLabel.text = ""
     showStatus("Loading your Substack…")
-    runHttp("GET", m.apiBaseUrl + "/api/home", authHeaders(), "", "home")
+    url = m.apiBaseUrl + "/api/home"
+    if force = true then
+        url = url + "?refresh=1"
+    end if
+    runHttp("GET", url, authHeaders(), "", "home")
+end sub
+
+function nowSeconds() as integer
+    dt = CreateObject("roDateTime")
+    return dt.AsSeconds()
+end function
+
+function homeIsStale() as boolean
+    if m.homeFetchedAt = invalid or m.homeFetchedAt = 0 then
+        return true
+    end if
+    return (nowSeconds() - m.homeFetchedAt) >= 300
+end function
+
+sub maybeRefreshHome()
+    if m.deviceToken = invalid or m.deviceToken = "" then
+        return
+    end if
+    if m.homeData = invalid or homeIsStale() then
+        fetchHome(true)
+        return
+    end if
+    applyHome(m.homeData)
+end sub
+
+sub onWasShown()
+    if m.top.wasShown <> true then
+        return
+    end if
+    if m.phase <> "home" and m.phase <> "home_empty" then
+        return
+    end if
+    if m.deviceToken = invalid or m.deviceToken = "" then
+        return
+    end if
+    if homeIsStale() then
+        fetchHome(true)
+    end if
 end sub
 
 sub fetchAuthor(pubId as string, title as string)
@@ -282,6 +328,18 @@ function paidFilterTile() as object
     }
 end function
 
+function refreshTile() as object
+    return {
+        id: "refresh",
+        kind: "refresh",
+        title: "Refresh",
+        poster: "pkg:/images/search-tile.png",
+        playable: false,
+        publicationId: "",
+        publicationName: ""
+    }
+end function
+
 function shouldShowItem(item as object) as boolean
     if m.hidePaid = true and item.paidOnly = true then
         return false
@@ -372,7 +430,7 @@ sub applyHome(data as object)
     end if
     m.homeData = data
     content = CreateObject("roSGNode", "ContentNode")
-    content.appendChild(makeRow("Search", [searchTile(), paidFilterTile()]))
+    content.appendChild(makeRow("Search", [searchTile(), paidFilterTile(), refreshTile()]))
     if rowHasItems(visibleItems(data.recentVideo)) then
         content.appendChild(makeRow("Recent video", visibleItems(data.recentVideo)))
     end if
@@ -402,6 +460,9 @@ sub applyHome(data as object)
     if m.focusPaidTile = true then
         focusItem = 1
         m.focusPaidTile = false
+    else if m.focusRefreshTile = true then
+        focusItem = 2
+        m.focusRefreshTile = false
     end if
     m.homeList.jumpToRowItem = [0, focusItem]
 end sub
@@ -550,6 +611,11 @@ sub onHomeItemSelected()
         toggleHidePaid()
         return
     end if
+    if item.kind = "refresh" then
+        m.focusRefreshTile = true
+        fetchHome(true)
+        return
+    end if
     if item.kind = "publication" then
         fetchAuthor(item.publicationId, item.title)
         return
@@ -666,6 +732,7 @@ sub onHttpResponse()
     end if
 
     if purpose = "home" then
+        m.homeFetchedAt = nowSeconds()
         applyHome(data)
         return
     end if
@@ -1032,7 +1099,7 @@ function onKeyEvent(key as string, press as boolean) as boolean
             m.authorGrid.visible = false
             m.titleLabel.text = "Roku Substack"
             m.searchQuery = ""
-            applyHome(m.homeData)
+            maybeRefreshHome()
             return true
         end if
     end if

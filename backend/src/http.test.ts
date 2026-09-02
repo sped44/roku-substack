@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { deviceTokenFrom, normalizePairCode, pairLoginUrl, pairQrUrl, publicBaseUrl } from "./http.js";
+import {
+  deviceTokenFrom,
+  normalizePairCode,
+  pairLoginUrl,
+  pairQrUrl,
+  publicBaseUrl,
+  truthyQueryParam,
+} from "./http.js";
 
 function mockReq(partial: {
   host?: string;
@@ -79,5 +86,21 @@ describe("pair URLs", () => {
     expect(pairQrUrl("https://app.example.com", "abc123")).toBe(
       "https://app.example.com/api/pair/qr.png?code=ABC123",
     );
+  });
+});
+
+describe("truthyQueryParam", () => {
+  it("accepts 1, true, yes, and arrays of those", () => {
+    expect(truthyQueryParam("1")).toBe(true);
+    expect(truthyQueryParam("true")).toBe(true);
+    expect(truthyQueryParam("YES")).toBe(true);
+    expect(truthyQueryParam(["0", "1"])).toBe(true);
+  });
+
+  it("rejects missing, objects, and other strings", () => {
+    expect(truthyQueryParam(undefined)).toBe(false);
+    expect(truthyQueryParam("0")).toBe(false);
+    expect(truthyQueryParam("refresh")).toBe(false);
+    expect(truthyQueryParam({ refresh: "1" })).toBe(false);
   });
 });

@@ -49,3 +49,14 @@ export function pairQrUrl(base: string, code: string): string {
   const normalized = normalizePairCode(code);
   return `${base.replace(/\/$/, "")}/api/pair/qr.png?code=${encodeURIComponent(normalized)}`;
 }
+
+export function truthyQueryParam(value: unknown): boolean {
+  if (Array.isArray(value)) {
+    return value.some((item) => truthyQueryParam(item));
+  }
+  if (value && typeof value === "object") {
+    return false;
+  }
+  const s = String(value ?? "").trim().toLowerCase();
+  return s === "1" || s === "true" || s === "yes";
+}

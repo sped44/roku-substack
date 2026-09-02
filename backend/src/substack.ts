@@ -3,6 +3,16 @@ import { cookieHeader, parseSetCookieHeaders, type SessionCookies } from "./cook
 export const SUBSTACK_ORIGIN = "https://substack.com";
 export const SUBSTACK_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+export const ARCHIVE_PAGE_SIZE = 50;
+
+export function archiveUrl(host: string, offset = 0): string {
+  const params = new URLSearchParams({
+    sort: "new",
+    limit: String(ARCHIVE_PAGE_SIZE),
+    offset: String(offset),
+  });
+  return `https://${host}/api/v1/archive?${params.toString()}`;
+}
 
 export type SubstackProfile = {
   id: string;
@@ -123,11 +133,13 @@ export class HttpSubstackClient implements SubstackClient {
   }
 
   async fetchArchive(host: string, cookies: SessionCookies): Promise<RawPost[]> {
-    const res = await this.authedGet(
-      `https://${host}/api/v1/archive`,
-      cookies,
-    );
-    return normalizeArchive(await res.json());
+    const firstRes = await this.authedGet(archiveUrl(host, 0), cookies);
+    const first = normalizeArchive(await firstRes.json());
+    if (first.length < ARCHIVE_PAGE_SIZE) {
+      return first;
+    }
+    const secondRes = await this.authedGet(archiveUrl(host, ARCHIVE_PAGE_SIZE), cookies);
+    return first.concat(normalizeArchive(await secondRes.json()));
   }
 
   async resolveVideoSrc(

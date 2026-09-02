@@ -7,7 +7,14 @@ import {
   parseCookiePaste,
   type SessionCookies,
 } from "./cookies.js";
-import { deviceTokenFrom, normalizePairCode, pairLoginUrl, pairQrUrl, publicBaseUrl } from "./http.js";
+import {
+  deviceTokenFrom,
+  normalizePairCode,
+  pairLoginUrl,
+  pairQrUrl,
+  publicBaseUrl,
+  truthyQueryParam,
+} from "./http.js";
 import { escapeHtml, layout } from "./html.js";
 import { Store } from "./store.js";
 import type { SubstackClient } from "./substack.js";
@@ -19,6 +26,7 @@ import {
   playHttpError,
   resolvePlay,
   searchCatalog,
+  sortByDateDesc,
   type CatalogItem,
   type HomePayload,
 } from "./catalog.js";
@@ -518,7 +526,7 @@ export function createApp(deps: AppDeps): express.Express {
       if (!device) {
         return;
       }
-      const cached = await loadHome(device.userId);
+      const cached = await loadHome(device.userId, truthyQueryParam(req.query.refresh));
       res.json(cached.home);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -549,7 +557,9 @@ export function createApp(deps: AppDeps): express.Express {
         logoUrl: pub.poster,
         authorName: pub.subtitle,
       };
-      const posts = raw.map((post) => mapPost(post, publication)).filter((item) => item.playable);
+      const posts = sortByDateDesc(
+        raw.map((post) => mapPost(post, publication)).filter((item) => item.playable),
+      );
       res.json({ publication: pub, posts });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

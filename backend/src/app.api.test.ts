@@ -397,12 +397,23 @@ describe("companion API", () => {
     });
     expect(homeAgain.status).toBe(200);
     expect(client.fetchSubscriptions).toHaveBeenCalledTimes(1);
+    expect(client.fetchArchive).toHaveBeenCalledTimes(1);
+
+    const refreshed = await json(`${url}/api/home?refresh=1`, {
+      headers: { Authorization: `Bearer ${deviceToken}` },
+    });
+    expect(refreshed.status).toBe(200);
+    expect(client.fetchSubscriptions).toHaveBeenCalledTimes(2);
+    expect(client.fetchArchive).toHaveBeenCalledTimes(2);
 
     const posts = await json(`${url}/api/publications/10/posts`, {
       headers: { Authorization: `Bearer ${deviceToken}` },
     });
     expect(posts.status).toBe(200);
-    expect((posts.body as { posts: CatalogItem[] }).posts).toHaveLength(2);
+    expect((posts.body as { posts: CatalogItem[] }).posts.map((item) => item.title)).toEqual([
+      "Audio post",
+      "Video post",
+    ]);
     expect((posts.body as { posts: CatalogItem[] }).posts.every((item) => item.playable)).toBe(true);
 
     const missingPub = await json(`${url}/api/publications/999/posts`, {
