@@ -1,11 +1,24 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  ARCHIVE_PAGE_SIZE,
   HttpSubstackClient,
+  archiveUrl,
   cookiesFromResponse,
   normalizeArchive,
   normalizeSubscriptions,
   publicationHost,
 } from "./substack.js";
+
+describe("archiveUrl", () => {
+  it("requests newest posts with a page size of 50", () => {
+    expect(archiveUrl("a.substack.com")).toBe(
+      "https://a.substack.com/api/v1/archive?sort=new&limit=50&offset=0",
+    );
+    expect(archiveUrl("a.substack.com", ARCHIVE_PAGE_SIZE)).toBe(
+      "https://a.substack.com/api/v1/archive?sort=new&limit=50&offset=50",
+    );
+  });
+});
 
 describe("publicationHost", () => {
   it("prefers custom_domain then hostname then subdomain", () => {
@@ -213,6 +226,40 @@ describe("HttpSubstackClient", () => {
     expect(pubs[0]?.host).toBe("a.substack.com");
     const posts = await client.fetchArchive("a.substack.com", { connectSid: "c" });
     expect(posts[0]?.id).toBe(2);
+    expect(String(fetchMock.mock.calls[1]![0])).toBe(archiveUrl("a.substack.com", 0));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("fetches a second archive page only when the first is full", async () => {
+    const fullPage = Array.from({ length: ARCHIVE_PAGE_SIZE }, (_, i) => ({ id: i + 1 }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify(fullPage), { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([{ id: 51, title: "Next" }]), { status: 200 }),
+      );
+    const client = new HttpSubstackClient(fetchMock);
+    const posts = await client.fetchArchive("a.substack.com", { connectSid: "c" });
+    expect(posts).toHaveLength(ARCHIVE_PAGE_SIZE + 1);
+    expect(posts[ARCHIVE_PAGE_SIZE]?.id).toBe(51);
+    expect(String(fetchMock.mock.calls[0]![0])).toBe(archiveUrl("a.substack.com", 0));
+    expect(String(fetchMock.mock.calls[1]![0])).toBe(
+      archiveUrl("a.substack.com", ARCHIVE_PAGE_SIZE),
+    );
+  });
+
+  it("skips the second archive page when the first is short", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify(Array.from({ length: ARCHIVE_PAGE_SIZE - 1 }, (_, i) => ({ id: i }))),
+          { status: 200 },
+        ),
+    );
+    const client = new HttpSubstackClient(fetchMock);
+    const posts = await client.fetchArchive("a.substack.com", { connectSid: "c" });
+    expect(posts).toHaveLength(ARCHIVE_PAGE_SIZE - 1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("resolveVideoSrc reads JSON url or final response URL", async () => {
